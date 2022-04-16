@@ -23,7 +23,7 @@ public class OrderRepositoryV1 {
             sleep(1000);
             trace.end(status);
         } catch (Exception e) {
-            trace.execption(status, e);
+            trace.exception(status, e);
             throw e;
         }
     }

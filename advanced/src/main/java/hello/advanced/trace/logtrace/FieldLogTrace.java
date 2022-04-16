@@ -1,31 +1,41 @@
-package hello.advanced.trace.hellotrace;
+package hello.advanced.trace.logtrace;
 
 import hello.advanced.trace.TraceId;
 import hello.advanced.trace.TraceStatus;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
-public class HelloTraceV1 {
+public class FieldLogTrace implements LogTrace{
     private static final String START_PREFIX = "-->";
     private static final String COMPLETE_PREFIX = "<--";
     private static final String EX_PREFIX = "<X-";
 
+    private TraceId traceIdHolder; // traceId 동기화, 동시성 이슈 발생
+
+    @Override
     public TraceStatus begin(String message) {
-        TraceId traceId = new TraceId();
+        syncTraceId();
+        TraceId traceId = traceIdHolder;
         long startTimeMs = System.currentTimeMillis();
 
         log.info("[{}] {}{}", traceId.getId(), addSpace(START_PREFIX, traceId.getLevel()), message);
         return new TraceStatus(traceId, startTimeMs, message);
     }
 
+    private void syncTraceId() {
+        if (traceIdHolder == null) {
+            traceIdHolder = new TraceId();
+        } else {
+            traceIdHolder = traceIdHolder.createdNextId();
+        }
+    }
 
-
+    @Override
     public void end(TraceStatus status) {
         complete(status, null);
     }
 
+    @Override
     public void exception(TraceStatus status, Exception e) {
         complete(status, e);
     }
@@ -44,7 +54,18 @@ public class HelloTraceV1 {
                     addSpace(EX_PREFIX, traceId.getLevel()),
                     status.getMessage(), resultTimeMs, e.toString());
         }
+
+        releaseTraceId();
     }
+
+    private void releaseTraceId() {
+        if (traceIdHolder.isFirstLevel()) {
+            traceIdHolder = null; // destroy
+        } else {
+            traceIdHolder = traceIdHolder.createdPreviousId();
+        }
+    }
+
     private static String addSpace(String prefix, int level) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
@@ -52,5 +73,4 @@ public class HelloTraceV1 {
         }
         return sb.toString();
     }
-
 }
