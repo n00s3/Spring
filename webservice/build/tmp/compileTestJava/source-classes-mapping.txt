@@ -1,4 +1,0 @@
-org/noose/spring/springboot/web/dto/HelloResponseDtoTest.java
- org.noose.spring.springboot.web.dto.HelloResponseDtoTest
-org/noose/spring/springboot/web/HelloControllerTest.java
- org.noose.spring.springboot.web.HelloControllerTest
