@@ -35,3 +35,6 @@ target/
 # documents
 pdf
 *.pdf
+
+# etc
+.DS_Store
