@@ -9,6 +9,7 @@ public class OrderControllerImplV1 implements OrderControllerV1 {
 
     @Override
     public String request(String itemId) {
+        orderServiceV1.orderItem(itemId);
         return "ok";
     }
 
