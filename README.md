@@ -105,3 +105,20 @@ public class TimeInvocationHandler implements InvocationHandler {
 ```
 * `Object target`: 동적 프록시가 호출할 대상
 * `args`: 메서드 호출시 넘겨줄 인수 
+
+```java
+    @Test
+    void dynamicA() {
+        AInterface target = new AImpl();
+        TimeInvocationHandler handler = new TimeInvocationHandler(target);
+
+        AInterface proxy = (AInterface) Proxy.newProxyInstance(AInterface.class.getClassLoader(), new Class[]{AInterface.class}, handler);
+
+        proxy.call();
+    }
+```
+
+### CGLIB (Code Generator Library)
+* 바이트코드를 조작해서 동적으로 클래스를 생성하는 기술을 제공
+* 인터페이스가 없어도 구체 클래스만 가지고 동적 프록시를 생성
+스프링의 `ProxyFactory`가 편리하게 사용하게 도와주고 있다.
