@@ -122,3 +122,113 @@ public class TimeInvocationHandler implements InvocationHandler {
 * 바이트코드를 조작해서 동적으로 클래스를 생성하는 기술을 제공
 * 인터페이스가 없어도 구체 클래스만 가지고 동적 프록시를 생성
 스프링의 `ProxyFactory`가 편리하게 사용하게 도와주고 있다.
+
+## 스프링 프록시 팩토리
+인터페이스가 있으면 `JDK Dynamic Proxy`를 사용하고 구체 클래스가 있으면 `cglib`을 사용한다.
+
+즉, 프록시 팩토리 하나로 편리하게 동적 프록시를 생성할 수 있다.
+
+> Advice 도입
+* 프록시가 호출하는 부가 기능.
+
+
+* JDK dynamic proxy의 InvocationHandler
+* cglib의 MethodInterceptor
+
+위 두개 모두 Advice를 호출한다.
+> Pointcut
+* 어디에 부가 기능을 적용할지, 어디에 부가 기능을 적용하지 않을지 판단하는 필터링 로직.
+특정 조건에 맞을 때 프록시 로직을 추가하는 경우에 사용된다.
+
+    * `ClassFilter`: 클래스를 기준으로 필터링 
+    * `MethodFilter`: 메서드를 기준으로 필터링
+
+> Advisor
+* `Pointcut` + `Advice`
+
+
+### 사용 예제
+Advice를 생성하고 ProxyFactory에 target과 생성한 Advice를 넣어주면 끝이다.
+```java
+// target 대상
+@Slf4j
+public class ServiceImpl implements ServiceInterface {
+
+    @Override
+    public void save() {
+        log.info("save 호출");
+    }
+
+    @Override
+    public void find() {
+        log.info("find 호출");
+    }
+}
+
+
+// Advice 생성
+@Slf4j
+public class TimeAdvice implements MethodInterceptor {
+
+    @Override
+    public Object invoke(MethodInvocation invocation) throws Throwable {
+        // 공통 또는 중복 로직 시작
+        log.info("TimeProxy 실행");
+        long startTime = System.currentTimeMillis();
+        
+        // 비즈니스 로직 실행 부분
+        Object result = invocation.proceed();
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+        log.info("TimeProxy 종료 resultTime={}", resultTime);
+
+        // 공통 또는 중복 로직 종료
+        return result;
+    }
+}
+```
+```java
+// ProxyFactory 생성
+@Test
+void interfaceProxy() {
+    ServiceInterface target = new ServiceImpl();
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+    proxyFactory.addAdvice(new TimeAdvice());
+    // 메서드 내부에서 Advisor가 생성된다.
+    // DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor(Pointcut.TRUE, new TimeAdvice());
+    // proxyFactory.addAdvisor(advisor);
+
+    ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+    log.info("targetClass={}", target.getClass());
+    log.info("proxyClass={}", proxy.getClass());
+
+    proxy.find();
+    proxy.save();
+
+    assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+    assertThat(AopUtils.isJdkDynamicProxy(proxy)).isTrue(); // 인터페이스가 있는 타겟이기 때문에 JdkDynamicProxy로 생성되었음을 확인 
+    assertThat(AopUtils.isCglibProxy(proxy)).isFalse();
+}
+
+/* 실행결과
+INFO hello.proxy.proxyfactory.ProxyFactoryTest - targetClass=class hello.proxy.common.service.ServiceImpl
+INFO hello.proxy.proxyfactory.ProxyFactoryTest - proxyClass=class com.sun.proxy.$Proxy13
+INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 실행
+INFO hello.proxy.common.service.ServiceImpl - find 호출
+INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 종료 resultTime=0
+INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 실행
+INFO hello.proxy.common.service.ServiceImpl - save 호출
+INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 종료 resultTime=0
+*/
+```
+
+### 빈 후처리기
+
+
+
+* Bean으로 등록하기 위한 동적 프록시 생성코드가 많아지는 단점
+* 실제 객체 대신 프록시 객체를 Bean으로 등록 해야하는 단점
+
+위 두가지 문제를 해결한다.
