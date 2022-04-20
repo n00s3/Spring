@@ -225,9 +225,6 @@ INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 종료 resultTime=0
 ```
 
 ### 빈 후처리기
-
-
-
 * Bean으로 등록하기 위한 동적 프록시 생성코드가 많아지는 단점
 * 실제 객체 대신 프록시 객체를 Bean으로 등록 해야하는 단점
 
