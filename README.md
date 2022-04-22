@@ -224,8 +224,68 @@ INFO hello.proxy.common.advice.TimeAdvice - TimeProxy 종료 resultTime=0
 */
 ```
 
-### 빈 후처리기
 * Bean으로 등록하기 위한 동적 프록시 생성코드가 많아지는 단점
 * 실제 객체 대신 프록시 객체를 Bean으로 등록 해야하는 단점
 
-위 두가지 문제를 해결한다.
+위 두가지 문제를 빈 후처리기가 해결한다.
+### 빈 후처리기(Bean PostProcessor)
+빈 저장소에 등록하기 직전에 조작이 가능하다.
+
+* 객체 조작
+* 다른 객체로 바꿔치기가 가능
+
+```java
+// 방법
+// BeanPostProcessor의 postProcessAfterInitialization를 Override 해야한다.
+public class PackageLogTracePostProcessor implements BeanPostProcessor {
+
+    private final String basePackage;
+    private final Advisor advisor;
+
+    public PackageLogTracePostProcessor(String basePackage, Advisor advisor) {
+        this.basePackage = basePackage;
+        this.advisor = advisor;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        log.info("param beanName={} bean={}", beanName, bean.getClass());
+
+        // 프록시 적용 대상 여부 체크
+        // 프록시 적용 대상이 아니면 원본을 그대로 진행
+        String packageName = bean.getClass().getPackageName();
+        if (!packageName.startsWith(basePackage)) {
+            return bean;
+        }
+
+        // 프록시 대상이면 프록시를 만들어서 반환
+        ProxyFactory proxyFactory = new ProxyFactory(bean);
+        proxyFactory.addAdvisor(advisor);
+
+        Object proxy = proxyFactory.getProxy();
+        log.info("create proxy: target={} proxy={}", bean.getClass(), proxy.getClass());
+        return proxy;
+    }
+}
+```
+
+### AnnotationAwareAspectJAutoProxyCreator
+자동 프록시 생성기이다. 스프링 부트 환경에서는 라이브러리만 있으면 별다른 설정이 필요하지않다.
+`Advisor`만 `Bean`으로 등록해주면 알아서 프록시가 생성되고 `Bean`으로 등록된다.
+
+* 자동 프록시 생성기는 `Pointcut`으로 적용 대상여부를 판단하고 하나라도 일치하면 프록시를 생성한다.
+* 하나의 프록시에 여러 `Advisor(pointcut + advisor)`를 등록할 수 있다.
+
+```java
+    @Bean
+    public Advisor advisor(LogTrace logTrace) {
+        // pointcut
+        AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
+        pointcut.setExpression("execution(* hello.proxy.app..*(..)) && !execution(* hello.proxy.app..noLog(..))");
+
+
+        // advice
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+```
