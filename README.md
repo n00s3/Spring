@@ -270,6 +270,9 @@ public class PackageLogTracePostProcessor implements BeanPostProcessor {
 ```
 
 ### AnnotationAwareAspectJAutoProxyCreator
+> 라이브러리 추가
+* Gradle인 경우 `implementation 'org.springframework.boot:spring-boot-starter-aop'`를 추가한다.
+
 자동 프록시 생성기이다. 스프링 부트 환경에서는 라이브러리만 있으면 별다른 설정이 필요하지않다.
 `Advisor`만 `Bean`으로 등록해주면 알아서 프록시가 생성되고 `Bean`으로 등록된다.
 
@@ -288,4 +291,47 @@ public class PackageLogTracePostProcessor implements BeanPostProcessor {
         LogTraceAdvice advice = new LogTraceAdvice(logTrace);
         return new DefaultPointcutAdvisor(pointcut, advice);
     }
+```
+
+## @Aspect 프록시
+`AnnotationAwareAspectJAutoProxyCreator`는 `@Aspect` 어노테이션이 붙은 Bean을 Bean 컨테이너에서 찾아 `Advisor`로 만들어준다. 그리고 `Advisor`를 기반으로 프록시를 생성한다.
+* 애플리케이션의 여러 기능들 사이에 걸쳐서 들어가는 관심사이다. **횡단 관심사 (cross-cutting concerns)** 라고 한다.
+
+```java
+@Aspect
+public class LogTraceAspect {
+
+    /*
+        필요한 멤버 변수와 생성자
+    */
+
+    @Around("execution(* hello.proxy.app..*(..))") // Pointcut
+    public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+        // Advice 로직
+
+        TraceStatus status = null;
+        try {
+            String message = joinPoint.getSignature().toShortString();
+            status = logTrace.begin(message);
+
+            // 로직 호출
+            Object result = joinPoint.proceed();
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+
+// ---
+@Configuration
+public class AopConfig {
+    @Bean
+    public LogTraceAspect logTraceAspect(LogTrace logTrace) {
+        return new LogTraceAspect(logTrace);
+    }
+}
 ```
