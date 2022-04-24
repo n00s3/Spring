@@ -380,3 +380,32 @@ public class AopConfig {
     * 포인트컷으로 결정한 타겟의 조인 포인트에 어드바이스를 적용하는 것
 * AOP 프록시
     * 스프링의 AOP는 JDK dynaimic proxy와 cglib을 사용
+
+### 어드바이스 종류
+* `@Around`: 메서드 호출 전후에 수행, 가장 강력한 어드바이스, 조인 포인트 실행 여부 선택, 반환 값 변환, 예외 변환 등이 가능
+* `@Before`: 조인 포인트 실행(`joinPoint.proceed()`) 이전에 실행
+* `@AfterReturning`: 조인 포인트가 정상 완료후 실행
+* `@AfterThrowing`: 메서드가 예외를 던지는 경우 실행
+* `@After`: 조인 포인트가 정상 또는 예외에 관계없이 실행(finally)
+
+```java
+    @Before("hello.aop.order.aop.Pointcuts.orderAndService()")
+    public void doBefore(JoinPoint joinPoint) {
+        log.info("[before] {}", joinPoint.getSignature());
+    }
+
+    @AfterReturning(value = "hello.aop.order.aop.Pointcuts.orderAndService()", returning = "result")
+    public void doReturn(JoinPoint joinPoint, Object result) {
+        log.info("[return] {} return={}", joinPoint.getSignature(), result);
+    }
+
+    @AfterThrowing(value = "hello.aop.order.aop.Pointcuts.orderAndService()", throwing = "ex")
+    public void doThrowing(JoinPoint joinPoint, Exception ex) {
+        log.info("[ex] message={}", ex);
+    }
+
+    @After(value = "hello.aop.order.aop.Pointcuts.orderAndService()")
+    public void doAfter(JoinPoint joinPoint) {
+        log.info("[after] {}", joinPoint.getSignature());
+    }
+```
