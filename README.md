@@ -274,6 +274,8 @@ public class PackageLogTracePostProcessor implements BeanPostProcessor {
 * Gradle인 경우 `implementation 'org.springframework.boot:spring-boot-starter-aop'`를 추가한다.
 
 자동 프록시 생성기이다. 스프링 부트 환경에서는 라이브러리만 있으면 별다른 설정이 필요하지않다.
+> 스프링 부트에서는 `@EnableAspectJAutoProxy` 설정이 따료 필요하지 않다.
+
 `Advisor`만 `Bean`으로 등록해주면 알아서 프록시가 생성되고 `Bean`으로 등록된다.
 
 * 자동 프록시 생성기는 `Pointcut`으로 적용 대상여부를 판단하고 하나라도 일치하면 프록시를 생성한다.
@@ -335,3 +337,46 @@ public class AopConfig {
     }
 }
 ```
+
+## AOP
+### AOP 적용방식
+* 컴파일 시점 - 위빙(Weaving)
+    - `.class`를 만드는 시점에 부가기능을 적용
+    - `.class`를 디컴파일하면 Aspect 관련 코드가 들어간다.
+    - 원본 로직에 부가 기능 로직이 추가되는 것을 `위빙`이라 한다.
+    - AspectJ 직접 사용
+* 클래스 로딩 시점 - 위빙
+    - `.class` 파일을 조작한 다음 JVM에 올린다.
+    - ByteCode에 직접 수정을 가해서, 소스 파일의 수정 없이 원하는 기능을 부여
+    - 옵션 `java -javaagent`를 통해 클래스 로더 조작기를 지정한다.
+    - `java instrumentation`
+    - AspectJ 직접 사용
+* 런타임 시점 (프록시)
+    - 위 모든 예제는 런타임 시점에 적용되는 방법 사용
+    - 자바의 `main` 메서드가 이미 실행된 다음 적용
+    - 스프링 AOP에서 사용하는 방식
+
+**스프링은 AspectJ 문법을 차용하고 프록시 방식의 AOP를 적용한다. AspecetJ를 직접 사용하는 것이 아니다.**
+### AOP 용어정리
+* 조인 포인트(Join point)
+    * 어드바이스가 적용될 수 있는 위치
+        * 메서드 실행, 생성자 호출, 필드 값 접근 등
+    * AOP를 적용할 수 있는 모든 지점
+    * 스프링 AOP는 프록시 방식을 사용하므로 조인 포인트는 항상 메서드 실행 지점으로 제한
+* 포인트컷(Pointcut)
+    * 어드바이스가 적용될 위치를 선별하는 기능
+    * AspectJ 표현식을 사용해서 지정
+* 타겟(Target)
+    * 어드바이스를 받는 객체, 포인트컷으로 결정됨
+* 어드바이스(Advice)
+    * 특정 조인 포인트에서 Aspect에 의해 취해지는 조치
+    * Around, Before, After와 같은 다양한 종류가 있음
+* 애스펙트(Aspect)
+    * 어드바이스 + 포인트컷을 모듈화
+    * `@Aspect`
+* 어드바이저
+    * 하나의 어드바이스와 하나의 포인트컷으로 구성
+* 위빙
+    * 포인트컷으로 결정한 타겟의 조인 포인트에 어드바이스를 적용하는 것
+* AOP 프록시
+    * 스프링의 AOP는 JDK dynaimic proxy와 cglib을 사용
