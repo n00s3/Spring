@@ -409,3 +409,20 @@ public class AopConfig {
         log.info("[after] {}", joinPoint.getSignature());
     }
 ```
+
+### 포인트컷 지시자 (Pointcut Designator:PCD)
+* `execution`: 메소드 실행 조인트를 매칭
+    - 문법
+        - `execution(접근제어자? 반환타입 선언타입?메서드이름(파라미터) 예외?)`
+        - `?`는 생략 가능
+        - Ex) `"execution(public String hello.aop.member.MemberServiceImpl.hello(String))";`
+        - 생략된 Ex) `execution(* *(..))` --> allMatch
+- `within`
+- `args`
+- `this`
+- `target`
+- `@target`
+- `@within`
+- `@annotation`
+- `@args`
+- `bean`
