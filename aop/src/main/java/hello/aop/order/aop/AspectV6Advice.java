@@ -47,5 +47,6 @@ public class AspectV6Advice {
     @After(value = "hello.aop.order.aop.Pointcuts.orderAndService()")
     public void doAfter(JoinPoint joinPoint) {
         log.info("[after] {}", joinPoint.getSignature());
+
     }
 }
