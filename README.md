@@ -274,7 +274,7 @@ public class PackageLogTracePostProcessor implements BeanPostProcessor {
 * Gradle인 경우 `implementation 'org.springframework.boot:spring-boot-starter-aop'`를 추가한다.
 
 자동 프록시 생성기이다. 스프링 부트 환경에서는 라이브러리만 있으면 별다른 설정이 필요하지않다.
-> 스프링 부트에서는 `@EnableAspectJAutoProxy` 설정이 따료 필요하지 않다.
+> 스프링 부트에서는 `@EnableAspectJAutoProxy` 설정이 따로 필요하지 않다.
 
 `Advisor`만 `Bean`으로 등록해주면 알아서 프록시가 생성되고 `Bean`으로 등록된다.
 
